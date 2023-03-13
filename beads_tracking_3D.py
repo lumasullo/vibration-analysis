@@ -3,7 +3,7 @@
     ~~~~~~~~~~~~~~~~
     -
     
-    :authors: Luciano A. Masullo and Philipp Steen, 2021
+    :authors: Luciano A. Masullo 2021
 """
 
 import sys
@@ -37,9 +37,9 @@ plt.close('all')
 save_data = False
 
 px_size = 130 # pixel size in nm
-n_frames = 50000
-dt = 5e-3 # in s, frame real time of the acquisition (might be different from exp time!)
-w = 20 # how many frames are we going to average for the low-freq drift (w*dt should roughly correspond to a DNA-PAINT frame)
+n_frames = 10000
+dt = 20e-3 # in s, frame real time of the acquisition (might be different from exp time!)
+w = 5 # how many frames are we going to average for the low-freq drift (w*dt should roughly correspond to a DNA-PAINT frame)
 
 # directory = "/Users/masullo/Dropbox/Jungmann Lab/vibration analysis"
 # in_path = "/Users/masullo/Dropbox/Jungmann Lab/vibration analysis/38mW_1_MMStack_Pos0.ome_locs_picked.hdf5"
@@ -60,8 +60,11 @@ w = 20 # how many frames are we going to average for the low-freq drift (w*dt sh
 # file = r'FusionBT_200nm_beads_7mW_5ms_6/FusionBT_200nm_beads_7mW_5ms_6_MMStack_Pos0.ome_locs_picked.hdf5'
 # file = r'Zyla_200nm_beads_7mW_5ms_3/Zyla_200nm_beads_7mW_5ms_3_MMStack_Pos0.ome_locs_picked.hdf5'
 
-directory = r'/Volumes/pool-miblab4/users/masullo/zz.microscopy_raw/2022-02-03 vibration analysis Fusion BT w cooling and Zyla (2)/'
-file = r'FusionBT_200nm_beads_7mW_5ms_2/FusionBT_200nm_beads_7mW_5ms_2_MMStack_Pos0.ome_locs_picked.hdf5'
+# directory = r'/Volumes/pool-miblab4/users/masullo/zz.microscopy_raw/2022-02-03 vibration analysis Fusion BT w cooling and Zyla (2)/'
+# file = r'FusionBT_200nm_beads_7mW_5ms_2/FusionBT_200nm_beads_7mW_5ms_2_MMStack_Pos0.ome_locs_picked.hdf5'
+
+directory = r'/Volumes/pool-miblab/users/masullo/z_raw/22-11-14 Gemini PFS test/beads_200nm_15mW_3D_1/'
+file = r'beads_200nm_15mW_3D_1_MMStack_Pos0.ome_locs_picked.hdf5'
 
 in_path = directory + file
 fulltable = pd.read_hdf(in_path, key = 'locs')
@@ -69,11 +72,12 @@ fulltable = pd.read_hdf(in_path, key = 'locs')
 
 fulltable['x'] = fulltable['x']*px_size
 fulltable['y'] = fulltable['y']*px_size
+fulltable['z'] = fulltable['z']
 
 number_of_beads = fulltable['group'].max()+1
 print("Number of nanoparticles = ", number_of_beads)
 
-fig, ax = plt.subplots(2, figsize = (8,12))
+fig, ax = plt.subplots(3, figsize = (8,12))
 fig.tight_layout()
 color_map = cm.get_cmap('plasma', number_of_beads)
 
@@ -81,6 +85,7 @@ n = 1 # interval at which display points in the plot
 
 x_list = []
 y_list = []
+z_list = []
 
 d_beads = {}
 
@@ -91,23 +96,30 @@ for i in range(number_of_beads):
     
         x_0 = bead['x'].iloc[0]
         y_0 = bead['y'].iloc[0]
+        z_0 = bead['z'].iloc[0]
     
         bead['x'] = bead['x'] - x_0
         bead['y'] = bead['y'] - y_0
+        bead['z'] = bead['z'] - z_0
         
         ax[0].plot(bead['frame'][::n], bead['x'][::n], color = "red", alpha=0.05) # displaying every point would overload the plot
         ax[1].plot(bead['frame'][::n], bead['y'][::n], color = "red", alpha=0.05)
+        ax[2].plot(bead['frame'][::n], bead['z'][::n], color = "red", alpha=0.05)
+
 
         x_list.append(bead["x"].to_numpy())
         y_list.append(bead["y"].to_numpy())
+        z_list.append(bead["z"].to_numpy())
         
         keyx = 'x'+str(i)
         keyy = 'y'+str(i)
+        keyz = 'z'+str(i)
         
         if save_data:
 
             d_beads[keyx] = bead["x"].to_numpy()
             d_beads[keyy] = bead["y"].to_numpy()
+            d_beads[keyz] = bead["z"].to_numpy()
         
 if save_data:
     
@@ -122,6 +134,9 @@ ax[0].set_ylabel("x (nm)")
             
 ax[1].set_xlabel("Frame")
 ax[1].set_ylabel("y (nm)")
+
+ax[2].set_xlabel("Frame")
+ax[2].set_ylabel("y (nm)")
             
 number_of_good_beads = len(x_list)
 print("Number of completely tracked nanoparticles = ", number_of_good_beads)
